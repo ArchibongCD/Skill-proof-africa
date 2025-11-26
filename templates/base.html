@@ -1,0 +1,251 @@
+{% comment %} base.html {% endcomment %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SkillProof Africa - Blockchain-Verified Skills{% endblock %}</title>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/style.css">
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Navigation -->
+<nav class="navbar">
+    <div class="container nav-container">
+        <div class="nav-brand">
+            <i class="fas fa-shield-alt"></i>
+            <a href="/" style="text-decoration: none; color: inherit;">
+                <span>SkillProof Africa</span>
+            </a>
+        </div>
+        
+        <!-- Mobile Menu Toggle -->
+        <button class="mobile-menu-toggle" id="mobileMenuToggle">
+            <i class="fas fa-bars"></i>
+        </button>
+        
+        <!-- Desktop Navigation -->
+        <div class="nav-links">
+            <a href="/">Home</a>
+            <a href="/courses">Courses</a>
+            {% if user.is_authenticated %}
+                <a href="/dashboard">Dashboard</a>
+            {% endif %}
+        </div>
+        
+        <!-- Desktop Auth Section -->
+        <div class="nav-auth">
+            {% if user.is_authenticated %}
+                <span class="user-name">
+                    <i class="fas fa-user-circle"></i> {{ user.username }}
+                </span>
+                <a href="/logout" class="btn-logout">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+                <button class="wallet-btn" id="connectWallet">
+                    <i class="fas fa-wallet"></i>
+                    <span>Connect</span>
+                </button>
+            {% else %}
+                <a href="/login" class="btn-nav-outline">Login</a>
+                <a href="/register" class="btn-nav-primary">Register</a>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Mobile Menu Overlay -->
+    <div class="mobile-menu-overlay" id="mobileMenuOverlay"></div>
+    
+    <!-- Mobile Menu -->
+    <div class="mobile-menu" id="mobileMenu">
+        <div class="mobile-menu-header">
+            <div class="nav-brand">
+                <i class="fas fa-shield-alt"></i>
+                <span>Menu</span>
+            </div>
+            <button class="mobile-menu-close" id="mobileMenuClose">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="mobile-menu-content">
+            {% if user.is_authenticated %}
+                <div class="mobile-user-info">
+                    <i class="fas fa-user-circle"></i>
+                    <span>{{ user.username }}</span>
+                </div>
+            {% endif %}
+            
+            <a href="/" class="mobile-menu-item">
+                <i class="fas fa-home"></i> Home
+            </a>
+            <a href="/courses" class="mobile-menu-item">
+                <i class="fas fa-book"></i> Courses
+            </a>
+            {% if user.is_authenticated %}
+                <a href="/dashboard" class="mobile-menu-item">
+                    <i class="fas fa-chart-line"></i> Dashboard
+                </a>
+                <button class="mobile-menu-item" id="connectWalletMobile">
+                    <i class="fas fa-wallet"></i> Connect Wallet
+                </button>
+                <a href="/logout" class="mobile-menu-item logout">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            {% else %}
+                <a href="/login" class="mobile-menu-item">
+                    <i class="fas fa-sign-in-alt"></i> Login
+                </a>
+                <a href="/register" class="mobile-menu-item primary">
+                    <i class="fas fa-user-plus"></i> Register
+                </a>
+            {% endif %}
+        </div>
+    </div>
+</nav>
+
+    <!-- Main Content - This is where child templates inject their content -->
+    <main>
+        {% block content %}
+        <!-- Child templates will put their content here -->
+        {% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <h3><i class="fas fa-shield-alt"></i> SkillProof Africa</h3>
+                    <p>Empowering African talent with blockchain-verified skills</p>
+                    <p style="margin-top: 0.5rem; font-size: 0.9rem; opacity: 0.8;">
+                        <i class="fas fa-link"></i> Built on Camp Network
+                    </p>
+                </div>
+                
+                <div class="footer-links">
+                    <div class="footer-col">
+                        <h4>Platform</h4>
+                        <a href="/courses">Courses</a>
+                        <a href="/dashboard">Dashboard</a>
+                        <a href="/certificates">My Certificates</a>
+                        <a href="/verify">Verify Certificate</a>
+                    </div>
+                    
+                    <div class="footer-col">
+                        <h4>Learn</h4>
+                        <a href="/courses?category=programming">Programming</a>
+                        <a href="/courses?category=design">Design</a>
+                        <a href="/courses?category=blockchain">Blockchain</a>
+                        <a href="/courses?category=ai">AI & ML</a>
+                    </div>
+                    
+                    <div class="footer-col">
+                        <h4>Connect</h4>
+                        <a href="https://twitter.com" target="_blank"><i class="fab fa-twitter"></i> Twitter</a>
+                        <a href="https://discord.com/invite/campnetwork" target="_blank"><i class="fab fa-discord"></i> Discord</a>
+                        <a href="https://github.com" target="_blank"><i class="fab fa-github"></i> GitHub</a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <p>&copy; 2025 SkillProof Africa. Built for Camp Network Africa Buildathon.</p>
+            </div>
+        </div>
+    </footer>
+
+
+    <!-- 1. Camp Network Origin SDK -->
+    {% comment %} <script src="https://unpkg.com/@camp-network/origin-sdk@latest/dist/index.umd.js"></script> {% endcomment %}
+    <script src="https://origin.campnetwork.xyz/"></script>
+
+    <!-- 2. Web3.js (for contract interactions) -->
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.10.0/dist/web3.min.js"></script>
+
+    <!-- 3. Main.js -->
+    <script src="/static/js/main.js"></script>
+
+    <!-- 4. Web3 Integration -->
+    <script src="/static/js/web3.js"></script>
+    
+    
+    <!-- Mobile Menu Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+            const mobileMenu = document.getElementById('mobileMenu');
+            const mobileMenuClose = document.getElementById('mobileMenuClose');
+            const mobileMenuOverlay = document.getElementById('mobileMenuOverlay');
+            
+            // Open mobile menu
+            if (mobileMenuToggle) {
+                mobileMenuToggle.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    mobileMenu.classList.add('active');
+                    mobileMenuOverlay.classList.add('active');
+                    document.body.style.overflow = 'hidden';
+                });
+            }
+            
+            // Close mobile menu
+            if (mobileMenuClose) {
+                mobileMenuClose.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    mobileMenu.classList.remove('active');
+                    mobileMenuOverlay.classList.remove('active');
+                    document.body.style.overflow = 'auto';
+                });
+            }
+            
+            // Close menu when clicking overlay
+            if (mobileMenuOverlay) {
+                mobileMenuOverlay.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    mobileMenu.classList.remove('active');
+                    mobileMenuOverlay.classList.remove('active');
+                    document.body.style.overflow = 'auto';
+                });
+            }
+            
+            // Close menu when clicking menu items
+            const menuItems = document.querySelectorAll('.mobile-menu-item');
+            menuItems.forEach(function(item) {
+                item.addEventListener('click', function() {
+                    // Don't close if it's the wallet connect button
+                    if (this.id !== 'connectWalletMobile') {
+                        setTimeout(function() {
+                            mobileMenu.classList.remove('active');
+                            mobileMenuOverlay.classList.remove('active');
+                            document.body.style.overflow = 'auto';
+                        }, 200);
+                    }
+                });
+            });
+            
+            // Mobile wallet connect
+            const connectWalletMobile = document.getElementById('connectWalletMobile');
+            const connectWalletDesktop = document.getElementById('connectWallet');
+            
+            if (connectWalletMobile && connectWalletDesktop) {
+                connectWalletMobile.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    connectWalletDesktop.click();
+                });
+            }
+        });
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+
+</body>
+</html>

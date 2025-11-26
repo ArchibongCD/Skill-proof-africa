@@ -1,0 +1,546 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ course.title }} - SkillProof Africa{% endblock %}
+
+{% block extra_css %}
+<style>
+    .course-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 60px 0;
+    }
+    
+    .course-header-content {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 3rem;
+        align-items: start;
+    }
+    
+    .course-badge {
+        display: inline-block;
+        background: rgba(255, 255, 255, 0.2);
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        margin-bottom: 1rem;
+    }
+    
+    .course-header h1 {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+    }
+    
+    .course-meta-header {
+        display: flex;
+        gap: 2rem;
+        margin-top: 1.5rem;
+    }
+    
+    .meta-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .course-sidebar {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 2rem;
+        border-radius: 16px;
+        backdrop-filter: blur(10px);
+    }
+    
+    .sidebar-stat {
+        margin-bottom: 1.5rem;
+    }
+    
+    .sidebar-stat h3 {
+        font-size: 2rem;
+        margin-bottom: 0.25rem;
+    }
+    
+    .sidebar-stat p {
+        opacity: 0.9;
+        font-size: 0.95rem;
+    }
+    
+    .start-quiz-btn {
+        width: 100%;
+        padding: 1rem;
+        background: white;
+        color: var(--primary);
+        border: none;
+        border-radius: 12px;
+        font-weight: 700;
+        font-size: 1.1rem;
+        cursor: pointer;
+        margin-top: 1rem;
+        transition: transform 0.2s;
+    }
+    
+    .start-quiz-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+    }
+    
+    .course-content-section {
+        padding: 60px 0;
+    }
+    
+    .content-tabs {
+        display: flex;
+        gap: 1rem;
+        border-bottom: 2px solid #e5e7eb;
+        margin-bottom: 2rem;
+    }
+    
+    .tab {
+        padding: 1rem 2rem;
+        background: none;
+        border: none;
+        font-weight: 600;
+        color: var(--gray);
+        cursor: pointer;
+        position: relative;
+        transition: color 0.3s;
+    }
+    
+    .tab.active {
+        color: var(--primary);
+    }
+    
+    .tab.active::after {
+        content: '';
+        position: absolute;
+        bottom: -2px;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: var(--primary);
+    }
+    
+    .tab-content {
+        display: none;
+    }
+    
+    .tab-content.active {
+        display: block;
+    }
+    
+    .course-text {
+        line-height: 1.8;
+        color: var(--dark);
+        font-size: 1.05rem;
+    }
+    
+    .course-text h2 {
+        margin-top: 2rem;
+        margin-bottom: 1rem;
+        color: var(--dark);
+    }
+    
+    .course-text p {
+        margin-bottom: 1.5rem;
+    }
+    
+    /* Quiz Styles */
+    .quiz-container {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+    
+    .quiz-header {
+        background: var(--light);
+        padding: 2rem;
+        border-radius: 16px;
+        margin-bottom: 2rem;
+        text-align: center;
+    }
+    
+    .quiz-progress {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 1rem;
+    }
+    
+    .question-card {
+        background: white;
+        padding: 2rem;
+        border-radius: 16px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        margin-bottom: 2rem;
+    }
+    
+    .question-number {
+        color: var(--primary);
+        font-weight: 700;
+        margin-bottom: 1rem;
+    }
+    
+    .question-text {
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin-bottom: 2rem;
+        color: var(--dark);
+    }
+    
+    .options {
+        display: grid;
+        gap: 1rem;
+    }
+    
+    .option {
+        padding: 1.5rem;
+        border: 2px solid #e5e7eb;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+    
+    .option:hover {
+        border-color: var(--primary);
+        background: #f8f9ff;
+    }
+    
+    .option.selected {
+        border-color: var(--primary);
+        background: #f8f9ff;
+    }
+    
+    .option-letter {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: var(--light);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        color: var(--primary);
+    }
+    
+    .quiz-actions {
+        display: flex;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-top: 2rem;
+    }
+    
+    .btn {
+        padding: 1rem 2rem;
+        border-radius: 12px;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    
+    .btn-primary {
+        background: var(--primary);
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        background: var(--primary-dark);
+        transform: translateY(-2px);
+    }
+    
+    .btn-outline {
+        background: white;
+        color: var(--primary);
+        border: 2px solid var(--primary);
+    }
+    
+    .result-card {
+        background: white;
+        padding: 3rem;
+        border-radius: 16px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        text-align: center;
+    }
+    
+    .result-icon {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+    }
+    
+    .result-score {
+        font-size: 3rem;
+        font-weight: 800;
+        color: var(--primary);
+        margin-bottom: 1rem;
+    }
+    
+    .certificate-preview {
+        background: var(--light);
+        padding: 2rem;
+        border-radius: 12px;
+        margin: 2rem 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Course Header -->
+<section class="course-header">
+    <div class="container">
+        <div class="course-header-content">
+            <div>
+                <span class="course-badge">{{ course.category|upper }}</span>
+                <h1>{{ course.title }}</h1>
+                <p style="font-size: 1.1rem; opacity: 0.95;">{{ course.description }}</p>
+                
+                <div class="course-meta-header">
+                    <div class="meta-item">
+                        <i class="far fa-clock"></i>
+                        <span>{{ course.duration }} minutes</span>
+                    </div>
+                    <div class="meta-item">
+                        <i class="fas fa-signal"></i>
+                        <span>{{ course.difficulty|title }}</span>
+                    </div>
+                    <div class="meta-item">
+                        <i class="fas fa-certificate"></i>
+                        <span>Certificate Included</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="course-sidebar">
+                <div class="sidebar-stat">
+                    <h3><i class="fas fa-users"></i> 1,234</h3>
+                    <p>Students Enrolled</p>
+                </div>
+                <div class="sidebar-stat">
+                    <h3><i class="fas fa-award"></i> 890</h3>
+                    <p>Certificates Issued</p>
+                </div>
+                <button class="start-quiz-btn" onclick="showTab('quiz')">
+                    <i class="fas fa-play-circle"></i> Start Quiz
+                </button>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Course Content -->
+<section class="course-content-section">
+    <div class="container">
+        <!-- Tabs -->
+        <div class="content-tabs">
+            <button class="tab active" onclick="showTab('content')">
+                <i class="fas fa-book"></i> Course Content
+            </button>
+            <button class="tab" onclick="showTab('quiz')">
+                <i class="fas fa-question-circle"></i> Take Quiz
+            </button>
+        </div>
+        
+        <!-- Course Content Tab -->
+        <div id="content" class="tab-content active">
+            <div class="course-text">
+                {{ course.content|safe }}
+            </div>
+        </div>
+        
+        <!-- Quiz Tab -->
+        <div id="quiz" class="tab-content">
+            <div class="quiz-container" id="quizContainer">
+                <div class="quiz-header">
+                    <h2>Ready to Test Your Knowledge?</h2>
+                    <p>You need 70% to pass and earn your certificate</p>
+                    <button class="btn btn-primary" onclick="startQuiz()" style="margin-top: 1rem;">
+                        Begin Quiz <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const courseSlug = '{{ course.slug }}';
+    let quizData = null;
+    let currentQuestion = 0;
+    let userAnswers = {};
+    
+    function showTab(tabName) {
+        // Update tabs
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        event.target.closest('.tab').classList.add('active');
+        
+        // Update content
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.remove('active');
+        });
+        document.getElementById(tabName).classList.add('active');
+    }
+    
+    async function startQuiz() {
+        try {
+            showLoading(true);
+            const response = await fetch(`/api/courses/${courseSlug}/quiz/`);
+            const data = await response.json();
+            
+            if (data.quiz) {
+                quizData = data.quiz;
+                currentQuestion = 0;
+                userAnswers = {};
+                renderQuiz();
+            } else {
+                showNotification('No quiz available for this course', 'error');
+            }
+            showLoading(false);
+        } catch (error) {
+            console.error('Error loading quiz:', error);
+            showNotification('Error loading quiz', 'error');
+            showLoading(false);
+        }
+    }
+    
+    function renderQuiz() {
+        const container = document.getElementById('quizContainer');
+        const question = quizData.questions[currentQuestion];
+        const totalQuestions = quizData.questions.length;
+        
+        container.innerHTML = `
+            <div class="quiz-header">
+                <div class="quiz-progress">
+                    <span>Question ${currentQuestion + 1} of ${totalQuestions}</span>
+                    <span>${Math.round(((currentQuestion) / totalQuestions) * 100)}% Complete</span>
+                </div>
+            </div>
+            
+            <div class="question-card">
+                <div class="question-number">Question ${currentQuestion + 1}</div>
+                <div class="question-text">${question.question_text}</div>
+                
+                <div class="options">
+                    <div class="option" onclick="selectOption(${question.id}, 'A')">
+                        <div class="option-letter">A</div>
+                        <div>${question.option_a}</div>
+                    </div>
+                    <div class="option" onclick="selectOption(${question.id}, 'B')">
+                        <div class="option-letter">B</div>
+                        <div>${question.option_b}</div>
+                    </div>
+                    <div class="option" onclick="selectOption(${question.id}, 'C')">
+                        <div class="option-letter">C</div>
+                        <div>${question.option_c}</div>
+                    </div>
+                    <div class="option" onclick="selectOption(${question.id}, 'D')">
+                        <div class="option-letter">D</div>
+                        <div>${question.option_d}</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="quiz-actions">
+                <button class="btn btn-outline" onclick="previousQuestion()" ${currentQuestion === 0 ? 'disabled' : ''}>
+                    <i class="fas fa-arrow-left"></i> Previous
+                </button>
+                <button class="btn btn-primary" onclick="${currentQuestion === totalQuestions - 1 ? 'submitQuiz()' : 'nextQuestion()'}">
+                    ${currentQuestion === totalQuestions - 1 ? 'Submit Quiz' : 'Next'} <i class="fas fa-arrow-right"></i>
+                </button>
+            </div>
+        `;
+        
+        // Mark selected answer if exists
+        if (userAnswers[question.id]) {
+            const selectedOption = document.querySelector(`.option:nth-child(${['A','B','C','D'].indexOf(userAnswers[question.id]) + 1})`);
+            if (selectedOption) selectedOption.classList.add('selected');
+        }
+    }
+    
+    function selectOption(questionId, answer) {
+        userAnswers[questionId] = answer;
+        document.querySelectorAll('.option').forEach(opt => opt.classList.remove('selected'));
+        event.currentTarget.classList.add('selected');
+    }
+    
+    function nextQuestion() {
+        if (currentQuestion < quizData.questions.length - 1) {
+            currentQuestion++;
+            renderQuiz();
+        }
+    }
+    
+    function previousQuestion() {
+        if (currentQuestion > 0) {
+            currentQuestion--;
+            renderQuiz();
+        }
+    }
+    
+    async function submitQuiz() {
+        if (Object.keys(userAnswers).length < quizData.questions.length) {
+            if (!confirm('You haven\'t answered all questions. Submit anyway?')) {
+                return;
+            }
+        }
+        
+        try {
+            showLoading(true);
+            const response = await fetch(`/api/courses/${courseSlug}/submit/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ answers: userAnswers })
+            });
+            
+            const result = await response.json();
+            showLoading(false);
+            
+            if (result.success) {
+                showResult(result);
+            } else {
+                showNotification('Error submitting quiz', 'error');
+            }
+        } catch (error) {
+            console.error('Error submitting quiz:', error);
+            showNotification('Error submitting quiz', 'error');
+            showLoading(false);
+        }
+    }
+    
+    function showResult(result) {
+        const container = document.getElementById('quizContainer');
+        const passed = result.passed;
+        
+        container.innerHTML = `
+            <div class="result-card">
+                <div class="result-icon">${passed ? '🎉' : '📚'}</div>
+                <h2>${passed ? 'Congratulations!' : 'Keep Learning!'}</h2>
+                <div class="result-score">${result.score}%</div>
+                <p style="font-size: 1.1rem; margin-bottom: 2rem;">
+                    ${passed 
+                        ? 'You passed the quiz! Your certificate is ready.' 
+                        : 'You need 70% to pass. Review the material and try again.'}
+                </p>
+                
+                ${passed ? `
+                    <div class="certificate-preview">
+                        <h3><i class="fas fa-certificate"></i> Certificate ID: ${result.certificate_id}</h3>
+                        <p>Your blockchain certificate will be minted soon!</p>
+                    </div>
+                    <button class="btn btn-primary" onclick="window.location.href='/dashboard'">
+                        View My Certificates <i class="fas fa-arrow-right"></i>
+                    </button>
+                ` : `
+                    <button class="btn btn-primary" onclick="showTab('content')">
+                        Review Course Content <i class="fas fa-book"></i>
+                    </button>
+                `}
+            </div>
+        `;
+    }
+</script>
+{% endblock %}
