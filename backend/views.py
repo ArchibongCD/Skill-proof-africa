@@ -3,10 +3,11 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import logout
 from courses.models import Course
+from certificates.models import Certificate
 
 def home(request):
     """Landing page"""
-    return render(request, 'home.html')
+    return render(request, 'index.html')
 
 def courses_page(request):
     """Courses listing page"""
@@ -39,11 +40,6 @@ def logout_page(request):
     logout(request)
     return redirect('/')
 
-def about_page(request):
-    """About page - for now just redirect to home"""
-    # We'll build this page later if needed
-    return redirect('/')
-
 @login_required
 def certificates_page(request):
     """User certificates page - redirect to dashboard for now"""
@@ -51,5 +47,22 @@ def certificates_page(request):
 
 def verify_certificate(request):
     """Public certificate verification page"""
-    # We'll build this later
-    return redirect('/')
+    certificate = None
+    error_message = None
+    certificate_id = request.GET.get('id', '')
+    
+    if certificate_id:
+        try:
+            certificate = Certificate.objects.select_related('user', 'course').get(
+                certificate_id=certificate_id
+            )
+        except Certificate.DoesNotExist:
+            error_message = "Certificate not found. Please check the ID and try again."
+    
+    context = {
+        'certificate': certificate,
+        'error_message': error_message,
+        'certificate_id': certificate_id,
+    }
+    
+    return render(request, 'verify.html', context)

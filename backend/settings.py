@@ -1,5 +1,4 @@
 # backend/settings.py
-# Add this to your existing settings.py file
 
 from pathlib import Path
 import os

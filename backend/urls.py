@@ -16,7 +16,7 @@ urlpatterns = [
     path('login/', views.login_page, name='login_page'),
     path('register/', views.register_page, name='register_page'),
     path('logout/', views.logout_page, name='logout_page'),
-    path('about/', views.about_page, name='about'),
+    # path('about/', views.about_page, name='about'),
     path('certificates/', views.certificates_page, name='certificates_page'),
     path('verify/', views.verify_certificate, name='verify'),
     
@@ -27,6 +27,7 @@ urlpatterns = [
     path('api/users/', include('users.urls')),
     path('api/courses/', include('courses.urls')),
     path('api/certificates/', include('certificates.urls')),
+    
 ]
 
 # Serve media and static files in development

@@ -18,6 +18,8 @@ class Course(models.Model):
         ('design', 'Design'),
         ('blockchain', 'Blockchain'),
         ('business', 'Business'),
+        ('ai', 'AI & Machine Learning'),
+        ('data', 'Data Science'),
         ('other', 'Other'),
     ]
     

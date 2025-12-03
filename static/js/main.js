@@ -35,8 +35,6 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     });
 });
 
-// Wallet connection is handled by web3.js
-// No need for placeholder code here anymore
 // console.log('Main.js loaded - wallet connection available via web3.js');
 
 // Initialize on page load

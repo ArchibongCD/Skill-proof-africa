@@ -494,47 +494,96 @@
         `).join('');
     }
     
-    // Mint NFT Certificate
-    async function mintNFTCertificate(certificateId, courseName, score) {
-        // Check if wallet is connected
-        if (!userAccount) {
-            showNotification('Please connect your wallet first!', 'error');
-            document.getElementById('connectWallet').click();
-            return;
-        }
+   // Mint NFT Certificate
+async function mintNFTCertificate(certificateId, courseName, score) {
+    // Check if wallet is connected
+    if (!userAccount) {
+        showNotification('Please connect your wallet first!', 'error');
+        document.getElementById('connectWallet').click();
+        return;
+    }
+    
+    const username = '{{ user.username }}';
+    
+    // Disable button
+    const btn = document.getElementById(`mint-btn-${certificateId}`);
+    const originalHTML = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Minting...';
+    
+    try {
+        // Call Web3 minting function
+        const result = await mintCertificateNFT({
+            certificateId: certificateId,
+            courseName: courseName,
+            studentName: username,
+            score: parseInt(score)
+        });
         
-        // Get user info
-        const username = '{{ user.username }}';
-        
-        // Disable button
-        const btn = document.getElementById(`mint-btn-${certificateId}`);
-        const originalHTML = btn.innerHTML;
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Minting...';
-        
-        try {
-            // Call Web3 minting function
-            const result = await mintCertificateNFT({
-                certificateId: certificateId,
-                courseName: courseName,
-                studentName: username,
-                score: parseInt(score)
-            });
+        if (result.success) {
+            // Update backend with blockchain data
+            await updateCertificateBlockchain(
+                certificateId,
+                result.transactionHash,
+                result.tokenId
+            );
             
-            if (result.success) {
-                showNotification('🎉 Certificate minted as NFT on blockchain!', 'success');
-                // Reload certificates
-                await loadCertificates();
-            } else {
-                throw new Error(result.error || 'Minting failed');
+            showNotification('🎉 Certificate minted as NFT on blockchain!', 'success');
+            
+            // Reload certificates after 2 seconds
+            setTimeout(() => {
+                loadCertificates();
+            }, 2000);
+        } else {
+            throw new Error(result.error || 'Minting failed');
+        }
+    } catch (error) {
+        console.error('Minting error:', error);
+        showNotification('Failed to mint NFT: ' + error.message, 'error');
+        btn.disabled = false;
+        btn.innerHTML = originalHTML;
+    }
+}
+
+// This is already in your web3.js but make sure it's accessible
+async function updateCertificateBlockchain(certificateId, txHash, tokenId) {
+    try {
+        const response = await fetch('/api/certificates/update-blockchain/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+            body: JSON.stringify({
+                certificate_id: certificateId,
+                transaction_hash: txHash,
+                nft_token_id: tokenId
+            })
+        });
+        
+        const data = await response.json();
+        console.log('Backend update result:', data);
+        return data;
+    } catch (error) {
+        console.error('Error updating certificate blockchain data:', error);
+    }
+}
+
+// Helper function to get CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
             }
-        } catch (error) {
-            console.error('Minting error:', error);
-            showNotification('Failed to mint NFT: ' + error.message, 'error');
-            btn.disabled = false;
-            btn.innerHTML = originalHTML;
         }
     }
+    return cookieValue;
+}
     
     function viewOnBlockchain(txHash) {
         const explorerUrl = `https://camp.cloud.blockscout.com/tx/${txHash}`;
@@ -622,5 +671,24 @@ function updateStats() {
     
     // Load dashboard on page load
     document.addEventListener('DOMContentLoaded', loadDashboard);
+
+    // Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Try to initialize Origin SDK
+    setTimeout(() => {
+        initializeOriginSDK().catch(() => {});
+    }, 1000);
+    
+    // Check if wallet was previously connected
+    if (isMetaMaskInstalled() && window.ethereum.selectedAddress) {
+        connectWallet();
+    }
+    
+    // Connect wallet button
+    const connectWalletBtn = document.getElementById('connectWallet');
+    if (connectWalletBtn) {
+        connectWalletBtn.addEventListener('click', connectWallet);
+    }
+});
 </script>
 {% endblock %}

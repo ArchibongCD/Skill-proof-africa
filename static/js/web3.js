@@ -1,13 +1,20 @@
 // static/js/web3.js
-// Web3 Integration for SkillProof Africa
+// Web3 Integration for SkillProof Africa with Camp Network Origin SDK
 
 // Contract Configuration
 const CONTRACT_ADDRESS = '0x5cA16DD43883423E8ACEF5d2C38b2B7fbcEEAfF1';
-const CAMP_CHAIN_ID = '123420001114'; // Replace with Camp Network Chain ID (get from their docs)
-const CAMP_RPC_URL = 'https://origin.campnetwork.xyz/';
+const CAMP_CHAIN_ID = '123420001114';
+const CAMP_RPC_URL = 'https://rpc.basecamp.t.raas.gelato.cloud';
 
-// Contract ABI (Application Binary Interface)
-// This is how JavaScript talks to the smart contract
+// Camp Network Origin SDK Configuration
+const CAMP_CONFIG = {
+    clientId: "fce77d7a-8085-47ca-adff-306a933e76aa",
+    apiKey: '4f1a2c9c-008e-47ca-adff-306a933e76aa', 
+    environment: 'DEVELOPMENT',
+    redirectUri: window.location.origin,
+};
+
+// Contract ABI
 const CONTRACT_ABI = [
     {
         "inputs": [],
@@ -98,6 +105,29 @@ const CONTRACT_ABI = [
 let web3;
 let contract;
 let userAccount;
+let campAuth = null;
+
+// Initialize Camp Origin SDK
+function initializeOriginSDK() {
+    return new Promise((resolve, reject) => {
+        if (typeof window.CampNetwork === 'undefined') {
+            reject(new Error('CampNetwork SDK not loaded'));
+            return;
+        }
+        
+        try {
+            campAuth = new window.CampNetwork.Auth({
+                clientId: CAMP_CONFIG.clientId,
+                redirectUri: CAMP_CONFIG.redirectUri,
+                environment: CAMP_CONFIG.environment,
+                allowAnalytics: true,
+            });
+            resolve(true);
+        } catch (error) {
+            reject(error);
+        }
+    });
+}
 
 // Check if MetaMask is installed
 function isMetaMaskInstalled() {
@@ -106,14 +136,36 @@ function isMetaMaskInstalled() {
 
 // Connect wallet
 async function connectWallet() {
+    if (userAccount) {
+        disconnectWallet();
+        return;
+    }
+
+    const connectWalletBtn = document.getElementById('connectWallet');
+    if (connectWalletBtn) {
+        connectWalletBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Connecting...`;
+    }
+
     if (!isMetaMaskInstalled()) {
-        alert('Please install MetaMask to use blockchain features!');
+        showNotification('Please install MetaMask to use blockchain features!', 'error');
         window.open('https://metamask.io/download/', '_blank');
+        if (connectWalletBtn) {
+            connectWalletBtn.innerHTML = `<i class="fas fa-wallet"></i> <span>Connect</span>`;
+        }
         return;
     }
 
     try {
         showLoading(true);
+        
+        // Initialize Origin SDK if not already done
+        if (!campAuth) {
+            try {
+                await initializeOriginSDK();
+            } catch (error) {
+                // Continue without Origin SDK
+            }
+        }
         
         // Request account access
         const accounts = await window.ethereum.request({ 
@@ -121,35 +173,75 @@ async function connectWallet() {
         });
         
         userAccount = accounts[0];
+        window.userAccount = userAccount;
         
         // Initialize Web3
         web3 = new Web3(window.ethereum);
-        
-        // Initialize contract
         contract = new web3.eth.Contract(CONTRACT_ABI, CONTRACT_ADDRESS);
         
-        // Check if on correct network
+        // Check network
         const chainId = await web3.eth.getChainId();
-        if (chainId !== CAMP_CHAIN_ID) {
+        if (chainId.toString() !== CAMP_CHAIN_ID) {
             await switchToCAMPNetwork();
         }
         
         // Update UI
         updateWalletUI(userAccount);
         
-        // Save wallet to backend
+        // Save to backend
         await saveWalletAddress(userAccount);
+        
+        // Connect with Origin SDK if available
+        if (campAuth) {
+            try {
+                campAuth.setProvider({
+                    provider: window.ethereum,
+                    info: { name: 'MetaMask', icon: 'https://metamask.io/images/favicon.ico' }
+                });
+                await campAuth.connect();
+            } catch (originError) {
+                // Continue with basic connection
+            }
+        }
         
         showNotification('Wallet connected successfully!', 'success');
         showLoading(false);
         
         return userAccount;
     } catch (error) {
-        console.error('Error connecting wallet:', error);
         showNotification('Failed to connect wallet: ' + error.message, 'error');
         showLoading(false);
+        if (connectWalletBtn) {
+            connectWalletBtn.innerHTML = `<i class="fas fa-wallet"></i> <span>Connect</span>`;
+        }
         return null;
     }
+}
+
+// Disconnect wallet
+function disconnectWallet() {
+    userAccount = null;
+    window.userAccount = null;
+    
+    const walletBtn = document.getElementById('connectWallet');
+    if (walletBtn) {
+        walletBtn.innerHTML = '<i class="fas fa-wallet"></i> <span>Connect</span>';
+        walletBtn.classList.remove('connected');
+    }
+    
+    const walletStatus = document.getElementById('walletStatus');
+    if (walletStatus) {
+        walletStatus.innerHTML = `
+            <i class="fas fa-wallet"></i>
+            <div style="margin-top: 0.5rem; font-weight: 600;">
+                <div id="walletText">Wallet Not Connected</div>
+                <div style="font-size: 0.85rem; opacity: 0.9;">Connect to mint NFTs</div>
+            </div>
+        `;
+        walletStatus.classList.remove('connected');
+    }
+    
+    showNotification('Wallet disconnected', 'info');
 }
 
 // Switch to Camp Network
@@ -157,18 +249,17 @@ async function switchToCAMPNetwork() {
     try {
         await window.ethereum.request({
             method: 'wallet_switchEthereumChain',
-            params: [{ chainId: CAMP_CHAIN_ID }],
+            params: [{ chainId: '0x' + parseInt(CAMP_CHAIN_ID).toString(16) }],
         });
     } catch (switchError) {
-        // Network not added, try to add it
         if (switchError.code === 4902) {
             try {
                 await window.ethereum.request({
                     method: 'wallet_addEthereumChain',
                     params: [{
-                        chainId: CAMP_CHAIN_ID,
-                        chainName: 'Camp Network Basecamp',
-                        rpcUrls: ['CAMP_RPC_URL'], // Replace with actual RPC
+                        chainId: '0x' + parseInt(CAMP_CHAIN_ID).toString(16),
+                        chainName: 'Camp Network Testnet',
+                        rpcUrls: [CAMP_RPC_URL],
                         nativeCurrency: {
                             name: 'CAMP',
                             symbol: 'CAMP',
@@ -189,16 +280,11 @@ async function switchToCAMPNetwork() {
 // Update UI after wallet connection
 function updateWalletUI(address) {
     const walletBtn = document.getElementById('connectWallet');
-    const walletText = document.getElementById('walletText');
     const walletStatus = document.getElementById('walletStatus');
+    const shortAddress = `${address.slice(0, 6)}...${address.slice(-4)}`;
     
     if (walletBtn) {
-        const shortAddress = `${address.slice(0, 6)}...${address.slice(-4)}`;
-        if (walletText) {
-            walletText.textContent = shortAddress;
-        } else {
-            walletBtn.innerHTML = `<i class="fas fa-wallet"></i> ${shortAddress}`;
-        }
+        walletBtn.innerHTML = `<i class="fas fa-check-circle"></i> <span>${shortAddress}</span>`;
         walletBtn.classList.add('connected');
     }
     
@@ -206,7 +292,7 @@ function updateWalletUI(address) {
         walletStatus.innerHTML = `
             <i class="fas fa-check-circle"></i>
             <div style="margin-top: 0.5rem; font-weight: 600;">Wallet Connected</div>
-            <div style="font-size: 0.85rem; opacity: 0.9;">${address.slice(0, 10)}...${address.slice(-8)}</div>
+            <div style="font-size: 0.85rem; opacity: 0.9;">${address}</div>
         `;
         walletStatus.classList.add('connected');
     }
@@ -219,66 +305,61 @@ async function saveWalletAddress(address) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken'),
             },
-            body: JSON.stringify({
-                wallet_address: address
-            })
+            body: JSON.stringify({ wallet_address: address })
         });
         
         const data = await response.json();
-        if (data.success) {
-            console.log('Wallet address saved to database');
+        if (!data.success) {
+            console.error('Failed to save wallet address');
         }
     } catch (error) {
-        console.error('Error saving wallet address:', error);
+        console.error('Error saving wallet:', error);
     }
 }
 
-// Mint certificate NFT
+// Mint certificate NFT using Camp Origin SDK
 async function mintCertificateNFT(certificateData) {
-    if (!contract || !userAccount) {
+    if (!campAuth || !userAccount) {
         showNotification('Please connect your wallet first', 'error');
-        return false;
+        return { success: false, error: 'Wallet not connected' };
     }
 
     try {
         showLoading(true);
         
-        // Call smart contract mintCertificate function
-        const tx = await contract.methods.mintCertificate(
-            certificateData.certificateId,
-            certificateData.courseName,
-            certificateData.studentName,
-            userAccount,
-            certificateData.score,
-            "" // tokenURI (optional)
-        ).send({ 
-            from: userAccount,
-            gas: 500000 // Adjust if needed
-        });
+        const license = {
+            price: BigInt("1000000000000000"),
+            duration: 86400,
+            royaltyBps: 500,
+            paymentToken: "0x0000000000000000000000000000000000000000"
+        };
+
+        const metadata = {
+            name: `Skill Proof: ${certificateData.courseName}`,
+            description: `Certificate for ${certificateData.studentName} - Score: ${certificateData.score}%`,
+            attributes: [
+                { trait_type: "Course", value: certificateData.courseName },
+                { trait_type: "Score", value: certificateData.score.toString() },
+                { trait_type: "Certificate ID", value: certificateData.certificateId }
+            ]
+        };
+
+        const tokenId = await campAuth.origin.mintSocial("twitter", metadata, license);
         
-        console.log('Transaction successful:', tx);
-        
-        // Update backend with transaction hash
-        await updateCertificateBlockchain(
-            certificateData.certificateId,
-            tx.transactionHash,
-            tx.events.CertificateMinted.returnValues.tokenId
-        );
-        
-        showNotification('Certificate minted on blockchain!', 'success');
         showLoading(false);
+        showNotification('Certificate minted successfully!', 'success');
         
         return {
             success: true,
-            transactionHash: tx.transactionHash,
-            tokenId: tx.events.CertificateMinted.returnValues.tokenId
+            transactionHash: tokenId,
+            tokenId: tokenId
         };
         
     } catch (error) {
-        console.error('Error minting certificate:', error);
-        showNotification('Failed to mint certificate: ' + error.message, 'error');
         showLoading(false);
+        showNotification('Failed to mint certificate: ' + error.message, 'error');
         return { success: false, error: error.message };
     }
 }
@@ -286,10 +367,11 @@ async function mintCertificateNFT(certificateData) {
 // Update certificate with blockchain data
 async function updateCertificateBlockchain(certificateId, txHash, tokenId) {
     try {
-        const response = await fetch(`/api/certificates/update-blockchain/`, {
+        const response = await fetch('/api/certificates/update-blockchain/', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken'),
             },
             body: JSON.stringify({
                 certificate_id: certificateId,
@@ -300,94 +382,70 @@ async function updateCertificateBlockchain(certificateId, txHash, tokenId) {
         
         return await response.json();
     } catch (error) {
-        console.error('Error updating certificate blockchain data:', error);
+        console.error('Error updating certificate:', error);
     }
 }
 
-// Verify certificate on blockchain
-async function verifyCertificateOnChain(certificateId) {
-    if (!contract) {
-        // Initialize contract in read-only mode
-        web3 = new Web3('CAMP_RPC_URL'); // Replace with Camp Network RPC
-        contract = new web3.eth.Contract(CONTRACT_ABI, CONTRACT_ADDRESS);
-    }
-
-    try {
-        const result = await contract.methods.verifyCertificate(certificateId).call();
-        
-        return {
-            isValid: result.isValid,
-            courseName: result.courseName,
-            studentName: result.studentName,
-            score: result.score,
-            issueDate: new Date(result.issueDate * 1000)
-        };
-    } catch (error) {
-        console.error('Error verifying certificate:', error);
-        return { isValid: false };
-    }
-}
-
-// Get user's certificates from blockchain
-async function getUserCertificates() {
-    if (!contract || !userAccount) {
-        return [];
-    }
-
-    try {
-        const tokenIds = await contract.methods.tokensOfOwner(userAccount).call();
-        const certificates = [];
-        
-        for (let tokenId of tokenIds) {
-            const cert = await contract.methods.getCertificate(tokenId).call();
-            certificates.push({
-                tokenId: tokenId,
-                certificateId: cert.certificateId,
-                courseName: cert.courseName,
-                studentName: cert.studentName,
-                score: cert.score,
-                issueDate: new Date(cert.issueDate * 1000)
-            });
+// Helper: Get CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
         }
-        
-        return certificates;
-    } catch (error) {
-        console.error('Error getting user certificates:', error);
-        return [];
     }
+    return cookieValue;
+}
+
+// Show loading indicator
+function showLoading(show) {
+    const loadingEl = document.getElementById('loadingOverlay');
+    if (loadingEl) {
+        loadingEl.style.display = show ? 'flex' : 'none';
+    }
+}
+
+// Show notification
+function showNotification(message, type) {
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.textContent = message;
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 1rem 1.5rem;
+        background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'};
+        color: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        z-index: 10000;
+        animation: slideIn 0.3s ease;
+    `;
+    
+    document.body.appendChild(notification);
+    setTimeout(() => notification.remove(), 3000);
 }
 
 // Listen for account changes
 if (typeof window.ethereum !== 'undefined') {
     window.ethereum.on('accountsChanged', function (accounts) {
         if (accounts.length === 0) {
-            // User disconnected wallet
-            userAccount = null;
-            showNotification('Wallet disconnected', 'info');
+            disconnectWallet();
         } else {
-            // User switched accounts
             userAccount = accounts[0];
+            window.userAccount = userAccount;
             updateWalletUI(userAccount);
             saveWalletAddress(userAccount);
         }
     });
 
-    window.ethereum.on('chainChanged', function (chainId) {
-        // Reload page when network changes
+    window.ethereum.on('chainChanged', function () {
         window.location.reload();
     });
 }
-
-// Initialize on page load
-document.addEventListener('DOMContentLoaded', function() {
-    // Check if wallet was previously connected
-    if (isMetaMaskInstalled() && window.ethereum.selectedAddress) {
-        connectWallet();
-    }
-    
-    // Connect wallet button
-    const connectWalletBtn = document.getElementById('connectWallet');
-    if (connectWalletBtn) {
-        connectWalletBtn.addEventListener('click', connectWallet);
-    }
-});

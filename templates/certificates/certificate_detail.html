@@ -1,0 +1,358 @@
+{% extends 'base.html' %}
+
+{% block title %}Certificate - {{ certificate.certificate_id }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .certificate-page {
+        padding: 80px 0;
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        min-height: 100vh;
+    }
+    
+    .certificate-container {
+        max-width: 900px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 20px;
+        padding: 3rem;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .certificate-container::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 8px;
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+    }
+    
+    .cert-header {
+        text-align: center;
+        margin-bottom: 3rem;
+        padding-bottom: 2rem;
+        border-bottom: 2px solid var(--light);
+    }
+    
+    .cert-badge {
+        width: 100px;
+        height: 100px;
+        background: linear-gradient(135deg, #fbbf24, #f59e0b);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 3rem;
+        margin: 0 auto 1.5rem;
+        box-shadow: 0 10px 30px rgba(251, 191, 36, 0.3);
+    }
+    
+    .cert-title {
+        font-size: 2.5rem;
+        font-weight: 800;
+        color: var(--dark);
+        margin-bottom: 0.5rem;
+    }
+    
+    .cert-subtitle {
+        font-size: 1.2rem;
+        color: var(--gray);
+    }
+    
+    .cert-body {
+        margin: 3rem 0;
+    }
+    
+    .cert-field {
+        display: grid;
+        grid-template-columns: 200px 1fr;
+        gap: 1rem;
+        padding: 1.5rem;
+        background: var(--light);
+        border-radius: 12px;
+        margin-bottom: 1rem;
+    }
+    
+    .cert-label {
+        font-weight: 600;
+        color: var(--dark);
+    }
+    
+    .cert-value {
+        color: var(--gray);
+        font-family: monospace;
+        word-break: break-word;
+    }
+    
+    .score-display {
+        text-align: center;
+        padding: 2rem;
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        color: white;
+        border-radius: 16px;
+        margin: 2rem 0;
+    }
+    
+    .score-number {
+        font-size: 4rem;
+        font-weight: 800;
+        margin-bottom: 0.5rem;
+    }
+    
+    .blockchain-badge {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+        padding: 1.5rem;
+        background: #dcfce7;
+        color: #16a34a;
+        border-radius: 12px;
+        font-weight: 600;
+        margin: 2rem 0;
+    }
+    
+    .blockchain-badge i {
+        font-size: 2rem;
+    }
+    
+    .cert-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        margin-top: 3rem;
+        padding-top: 2rem;
+        border-top: 2px solid var(--light);
+        flex-wrap: wrap;
+    }
+    
+    .btn-cert {
+        padding: 1rem 2rem;
+        border-radius: 10px;
+        font-weight: 600;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.3s;
+        border: none;
+        cursor: pointer;
+    }
+    
+    .btn-primary-cert {
+        background: var(--primary);
+        color: white;
+    }
+    
+    .btn-outline-cert {
+        background: transparent;
+        border: 2px solid var(--primary);
+        color: var(--primary);
+    }
+    
+    .btn-cert:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    }
+
+    /* Responsive Design */
+    @media screen and (max-width: 768px) {
+        .certificate-page {
+            padding: 40px 0;
+        }
+
+        .certificate-container {
+            padding: 2rem 1.5rem;
+            margin: 0 1rem;
+            border-radius: 16px;
+        }
+
+        .cert-badge {
+            width: 80px;
+            height: 80px;
+            font-size: 2.5rem;
+        }
+
+        .cert-title {
+            font-size: 1.8rem;
+        }
+
+        .cert-subtitle {
+            font-size: 1rem;
+        }
+
+        .cert-field {
+            grid-template-columns: 1fr;
+            padding: 1rem;
+            gap: 0.5rem;
+        }
+
+        .cert-label {
+            font-size: 0.9rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .cert-value {
+            font-size: 0.85rem;
+        }
+
+        .score-number {
+            font-size: 3rem;
+        }
+
+        .score-display {
+            padding: 1.5rem;
+        }
+
+        .blockchain-badge {
+            flex-direction: column;
+            text-align: center;
+            padding: 1rem;
+        }
+
+        .blockchain-badge i {
+            font-size: 1.5rem;
+        }
+
+        .cert-actions {
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .btn-cert {
+            width: 100%;
+            justify-content: center;
+            padding: 0.875rem 1.5rem;
+        }
+    }
+
+    @media screen and (max-width: 480px) {
+        .certificate-container {
+            padding: 1.5rem 1rem;
+        }
+
+        .cert-title {
+            font-size: 1.5rem;
+        }
+
+        .cert-badge {
+            width: 70px;
+            height: 70px;
+            font-size: 2rem;
+        }
+
+        .score-number {
+            font-size: 2.5rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="certificate-page">
+    <div class="container">
+        <div class="certificate-container">
+            <div class="cert-header">
+                <div class="cert-badge">🏆</div>
+                <h1 class="cert-title">Certificate of Completion</h1>
+                <p class="cert-subtitle">SkillProof Africa</p>
+            </div>
+            
+            <div class="cert-body">
+                <div class="cert-field">
+                    <div class="cert-label">Certificate ID:</div>
+                    <div class="cert-value">{{ certificate.certificate_id }}</div>
+                </div>
+                
+                <div class="cert-field">
+                    <div class="cert-label">Awarded To:</div>
+                    <div class="cert-value">{{ certificate.user.username }}</div>
+                </div>
+                
+                <div class="cert-field">
+                    <div class="cert-label">Course:</div>
+                    <div class="cert-value">{{ certificate.course.title }}</div>
+                </div>
+                
+                <div class="cert-field">
+                    <div class="cert-label">Category:</div>
+                    <div class="cert-value">{{ certificate.course.category|title }}</div>
+                </div>
+                
+                <div class="cert-field">
+                    <div class="cert-label">Date Issued:</div>
+                    <div class="cert-value">{{ certificate.issued_at|date:"F d, Y" }}</div>
+                </div>
+                
+                {% if certificate.user.wallet_address %}
+                <div class="cert-field">
+                    <div class="cert-label">Wallet Address:</div>
+                    <div class="cert-value">{{ certificate.user.wallet_address }}</div>
+                </div>
+                {% endif %}
+                
+                <div class="score-display">
+                    <div class="score-number">{{ certificate.score }}%</div>
+                    <div>Final Score</div>
+                </div>
+                
+                {% if certificate.blockchain_minted %}
+                <div class="blockchain-badge">
+                    <i class="fas fa-check-circle"></i>
+                    <div>
+                        <div style="font-size: 1.2rem;">Verified on Blockchain</div>
+                        <div style="font-size: 0.9rem; opacity: 0.8; margin-top: 0.25rem;">
+                            NFT Token ID: {{ certificate.nft_token_id }}
+                        </div>
+                    </div>
+                </div>
+                
+                {% if certificate.transaction_hash %}
+                <div class="cert-field">
+                    <div class="cert-label">Transaction Hash:</div>
+                    <div class="cert-value" style="word-break: break-all;">
+                        {{ certificate.transaction_hash }}
+                    </div>
+                </div>
+                {% endif %}
+                {% else %}
+                <div class="blockchain-badge" style="background: #fef3c7; color: #d97706;">
+                    <i class="fas fa-clock"></i>
+                    <div>Not yet minted on blockchain</div>
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="cert-actions">
+                <a href="/dashboard" class="btn-cert btn-outline-cert">
+                    <i class="fas fa-arrow-left"></i> Back to Dashboard
+                </a>
+                
+                {% if certificate.blockchain_minted and certificate.transaction_hash %}
+                <a href="https://basecamp.cloud.blockscout.com/tx/{{ certificate.transaction_hash }}" 
+                   target="_blank" 
+                   class="btn-cert btn-primary-cert">
+                    <i class="fas fa-external-link-alt"></i> View on Blockchain
+                </a>
+                {% endif %}
+                
+                <button onclick="shareCertificate()" class="btn-cert btn-outline-cert">
+                    <i class="fab fa-twitter"></i> Share
+                </button>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+function shareCertificate() {
+    const text = `I just earned a blockchain-verified certificate for "${‌{ certificate.course.title }}" with a score of {{ certificate.score }}%! #SkillProofAfrica #Web3Education`;
+    const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(window.location.href)}`;
+    window.open(url, '_blank', 'width=550,height=420');
+}
+</script>
+{% endblock %}

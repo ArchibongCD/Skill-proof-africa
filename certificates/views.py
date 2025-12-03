@@ -1,6 +1,6 @@
-# certificates/views.py
+# certificates/views.py - FIXED VERSION
 
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, render
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from .models import Certificate
@@ -45,6 +45,8 @@ def user_certificates(request):
         'course': {
             'title': cert.course.title,
             'slug': cert.course.slug,
+            'category': cert.course.category if hasattr(cert.course, 'category') else 'general',
+            'difficulty': cert.course.difficulty if hasattr(cert.course, 'difficulty') else 'intermediate',
         },
         'score': cert.score,
         'issued_at': cert.issued_at.isoformat(),
@@ -56,28 +58,35 @@ def user_certificates(request):
     return JsonResponse({'certificates': certs_data})
 
 def certificate_detail(request, certificate_id):
-    """Get certificate details (public view for verification)"""
+    """Get certificate details - Returns HTML page OR JSON based on request"""
     certificate = get_object_or_404(Certificate, certificate_id=certificate_id)
     
-    cert_data = {
-        'certificate_id': certificate.certificate_id,
-        'user': {
-            'username': certificate.user.username,
-            'wallet_address': certificate.user.wallet_address,
-        },
-        'course': {
-            'title': certificate.course.title,
-            'category': certificate.course.category,
-            'difficulty': certificate.course.difficulty,
-        },
-        'score': certificate.score,
-        'issued_at': certificate.issued_at.isoformat(),
-        'blockchain_minted': certificate.blockchain_minted,
-        'transaction_hash': certificate.transaction_hash,
-        'nft_token_id': certificate.nft_token_id,
-    }
+    # Check if request wants JSON (API call)
+    if request.headers.get('Accept') == 'application/json' or request.GET.get('format') == 'json':
+        cert_data = {
+            'certificate_id': certificate.certificate_id,
+            'user': {
+                'username': certificate.user.username,
+                'wallet_address': getattr(certificate.user, 'wallet_address', None),
+            },
+            'course': {
+                'title': certificate.course.title,
+                'category': getattr(certificate.course, 'category', 'general'),
+                'difficulty': getattr(certificate.course, 'difficulty', 'intermediate'),
+            },
+            'score': certificate.score,
+            'issued_at': certificate.issued_at.isoformat(),
+            'blockchain_minted': certificate.blockchain_minted,
+            'transaction_hash': certificate.transaction_hash,
+            'nft_token_id': certificate.nft_token_id,
+        }
+        return JsonResponse({'certificate': cert_data})
     
-    return JsonResponse({'certificate': cert_data})
+    # Otherwise return HTML page
+    context = {
+        'certificate': certificate,
+    }
+    return render(request, 'certificates/certificate_detail.html', context)
 
 def verify_certificate(request, certificate_id):
     """Verify if a certificate is valid"""
@@ -88,7 +97,9 @@ def verify_certificate(request, certificate_id):
             'certificate_id': certificate.certificate_id,
             'user': certificate.user.username,
             'course': certificate.course.title,
-            'issued_at': certificate.issued_at.isoformat()
+            'issued_at': certificate.issued_at.isoformat(),
+            'blockchain_minted': certificate.blockchain_minted,
+            'nft_token_id': certificate.nft_token_id,
         })
     except Certificate.DoesNotExist:
         return JsonResponse({
@@ -100,18 +111,38 @@ def verify_certificate(request, certificate_id):
 def mint_nft(request, certificate_pk):
     """
     Mint NFT certificate on blockchain
-    This will be implemented when we integrate Camp Network
+    This endpoint is called after blockchain minting to update the database
     """
     if request.method != 'POST':
         return JsonResponse({'error': 'POST method required'}, status=405)
     
     certificate = get_object_or_404(Certificate, pk=certificate_pk, user=request.user)
     
-    # TODO: Implement Camp Network blockchain minting
-    # For now, just return a placeholder response
-    
-    return JsonResponse({
-        'success': True,
-        'message': 'NFT minting will be implemented with Camp Network integration',
-        'certificate_id': certificate.certificate_id
-    })
+    try:
+        data = json.loads(request.body)
+        tx_hash = data.get('transaction_hash')
+        token_id = data.get('nft_token_id')
+        
+        if tx_hash and token_id:
+            certificate.transaction_hash = tx_hash
+            certificate.nft_token_id = token_id
+            certificate.blockchain_minted = True
+            certificate.save()
+            
+            return JsonResponse({
+                'success': True,
+                'message': 'Certificate successfully minted as NFT',
+                'certificate_id': certificate.certificate_id,
+                'nft_token_id': token_id,
+            })
+        else:
+            return JsonResponse({
+                'success': False,
+                'error': 'Missing transaction hash or token ID'
+            }, status=400)
+            
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=400)
